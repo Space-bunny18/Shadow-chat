@@ -10,9 +10,12 @@ function App() {
   const [joined, setJoined] = useState(false);
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [typingUser, setTypingUser] = useState("");
 
   const chatEndRef = useRef(null);
 
+  // Generate Room
   const generateRoom = () => {
 
     const randomRoom =
@@ -22,13 +25,18 @@ function App() {
     setRoom(randomRoom);
 
     setGeneratedRoom(randomRoom);
+
   };
 
+  // Join Chat
   const joinChat = () => {
 
     if (username.trim() !== "" && room.trim() !== "") {
 
-      socket.emit("join_room", room);
+      socket.emit("join_room", {
+        room,
+        username,
+      });
 
       setJoined(true);
 
@@ -36,6 +44,7 @@ function App() {
 
   };
 
+  // Send Message
   const sendMessage = () => {
 
     if (message.trim() !== "") {
@@ -60,6 +69,7 @@ function App() {
 
   };
 
+  // Receive Events
   useEffect(() => {
 
     socket.on("receive_message", (data) => {
@@ -68,14 +78,50 @@ function App() {
 
     });
 
+    socket.on("room_users", (usersList) => {
+
+      setUsers(usersList);
+
+    });
+
+    socket.on("system_message", (data) => {
+
+      setChat((prev) => [
+        ...prev,
+        {
+          user: "System",
+          text: data.text,
+          time: data.time,
+          system: true,
+        },
+      ]);
+
+    });
+
+    socket.on("typing", (data) => {
+
+      setTypingUser(data.username);
+
+      setTimeout(() => {
+
+        setTypingUser("");
+
+      }, 1500);
+
+    });
+
     return () => {
 
       socket.off("receive_message");
+      socket.off("room_users");
+      socket.off("system_message");
+      socket.off("typing");
 
     };
 
   }, []);
 
+  // Auto Scroll
   useEffect(() => {
 
     chatEndRef.current?.scrollIntoView({
@@ -84,6 +130,7 @@ function App() {
 
   }, [chat]);
 
+  // Join Screen
   if (!joined) {
     return (
       <div className="h-screen relative overflow-hidden flex items-center justify-center bg-black">
@@ -137,7 +184,7 @@ function App() {
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all duration-300 mt-4"
           />
 
-          {/* Generated Room Display */}
+          {/* Generated Room */}
           {generatedRoom && (
             <div className="mt-4 bg-slate-900/70 border border-cyan-500 text-cyan-400 p-3 rounded-xl text-sm text-center">
 
@@ -159,7 +206,7 @@ function App() {
             </button>
           )}
 
-          {/* Generate Room */}
+          {/* Generate Room Button */}
           <button
             onClick={generateRoom}
             className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all duration-300 text-white p-4 rounded-2xl font-semibold border border-slate-700"
@@ -192,6 +239,7 @@ function App() {
     );
   }
 
+  // Chat Screen
   return (
     <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black flex flex-col">
 
@@ -210,6 +258,10 @@ function App() {
 
           <div className="bg-green-500 w-3 h-3 rounded-full animate-pulse"></div>
 
+          <div className="text-cyan-400 text-sm">
+            Online: {users.length}
+          </div>
+
           <div className="text-white font-semibold">
             {username}
           </div>
@@ -225,7 +277,9 @@ function App() {
           <div
             key={index}
             className={`max-w-[300px] p-4 rounded-2xl shadow-lg ${
-              msg.user === username
+              msg.system
+                ? "self-center text-slate-300 text-sm bg-slate-900/80 px-5 py-2 rounded-lg border border-cyan-500/20 backdrop-blur-md shadow-lg"
+                : msg.user === username
                 ? "bg-blue-600 self-end text-white"
                 : "bg-slate-800 self-start text-white"
             }`}
@@ -250,6 +304,17 @@ function App() {
 
       </div>
 
+      {/* Typing Indicator */}
+      {typingUser && typingUser !== username && (
+
+        <div className="px-6 pb-2 text-sm text-cyan-400 animate-pulse">
+
+          {typingUser} is typing...
+
+        </div>
+
+      )}
+
       {/* Input Area */}
       <div className="p-5 bg-white/5 backdrop-blur-lg border-t border-white/10 flex gap-4">
 
@@ -257,7 +322,16 @@ function App() {
           type="text"
           placeholder="Type a message..."
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+
+            setMessage(e.target.value);
+
+            socket.emit("typing", {
+              room,
+              username,
+            });
+
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               sendMessage();
