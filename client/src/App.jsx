@@ -6,22 +6,40 @@ const socket = io("http://localhost:5000");
 function App() {
   const [username, setUsername] = useState("");
   const [room, setRoom] = useState("");
+  const [generatedRoom, setGeneratedRoom] = useState("");
   const [joined, setJoined] = useState(false);
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
 
   const chatEndRef = useRef(null);
 
+  const generateRoom = () => {
+
+    const randomRoom =
+      "room-" +
+      Math.random().toString(36).substring(2, 8);
+
+    setRoom(randomRoom);
+
+    setGeneratedRoom(randomRoom);
+  };
+
   const joinChat = () => {
+
     if (username.trim() !== "" && room.trim() !== "") {
+
       socket.emit("join_room", room);
 
       setJoined(true);
+
     }
+
   };
 
   const sendMessage = () => {
+
     if (message.trim() !== "") {
+
       const msgData = {
         room,
         user: username,
@@ -37,23 +55,33 @@ function App() {
       setChat((prev) => [...prev, msgData]);
 
       setMessage("");
+
     }
+
   };
 
   useEffect(() => {
+
     socket.on("receive_message", (data) => {
+
       setChat((prev) => [...prev, data]);
+
     });
 
     return () => {
+
       socket.off("receive_message");
+
     };
+
   }, []);
 
   useEffect(() => {
+
     chatEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
+
   }, [chat]);
 
   if (!joined) {
@@ -91,6 +119,7 @@ function App() {
 
           </p>
 
+          {/* Username Input */}
           <input
             type="text"
             placeholder="Choose Username"
@@ -99,6 +128,7 @@ function App() {
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all duration-300"
           />
 
+          {/* Room Input */}
           <input
             type="text"
             placeholder="Enter Room ID"
@@ -107,13 +137,45 @@ function App() {
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all duration-300 mt-4"
           />
 
+          {/* Generated Room Display */}
+          {generatedRoom && (
+            <div className="mt-4 bg-slate-900/70 border border-cyan-500 text-cyan-400 p-3 rounded-xl text-sm text-center">
+
+              Room Created: <strong>{generatedRoom}</strong>
+
+            </div>
+          )}
+
+          {/* Copy Button */}
+          {generatedRoom && (
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedRoom);
+                alert("Room ID Copied!");
+              }}
+              className="w-full mt-3 bg-cyan-600 hover:bg-cyan-700 transition-all duration-300 text-white p-3 rounded-xl font-semibold"
+            >
+              Copy Invite Code
+            </button>
+          )}
+
+          {/* Generate Room */}
+          <button
+            onClick={generateRoom}
+            className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all duration-300 text-white p-4 rounded-2xl font-semibold border border-slate-700"
+          >
+            Generate Private Room
+          </button>
+
+          {/* Join Button */}
           <button
             onClick={joinChat}
-            className="w-full mt-6 bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] transition-all duration-300 text-white p-4 rounded-2xl font-bold shadow-2xl"
+            className="w-full mt-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] transition-all duration-300 text-white p-4 rounded-2xl font-bold shadow-2xl"
           >
             Enter Secure Chat
           </button>
 
+          {/* Bottom Dots */}
           <div className="flex justify-center gap-3 mt-8">
 
             <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
@@ -156,7 +218,7 @@ function App() {
 
       </div>
 
-      {/* Chat Messages */}
+      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
 
         {chat.map((msg, index) => (
@@ -168,6 +230,7 @@ function App() {
                 : "bg-slate-800 self-start text-white"
             }`}
           >
+
             <p className="text-sm opacity-70 mb-1">
               {msg.user}
             </p>
@@ -179,6 +242,7 @@ function App() {
             <p className="text-[11px] opacity-60 mt-2 text-right">
               {msg.time}
             </p>
+
           </div>
         ))}
 
