@@ -1,34 +1,47 @@
 import { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
+import { io } from "socket.io-client";
 import { motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 
-const socket = io("http://localhost:5000");
+// SOCKET CONNECTION
+const socket = io(
+  "YOUR_RENDER_BACKEND_URL"
+);
 
 function App() {
 
-  const [username, setUsername] = useState("");
-  const [room, setRoom] = useState("");
+  // STATES
+  const [username, setUsername] =
+    useState("");
+
+  const [room, setRoom] =
+    useState("");
+
   const [generatedRoom, setGeneratedRoom] =
     useState("");
 
-  const [joined, setJoined] = useState(false);
+  const [joined, setJoined] =
+    useState(false);
+
   const [showSidebar, setShowSidebar] =
-  useState(false);
+    useState(false);
 
-  const [message, setMessage] = useState("");
-  const [chat, setChat] = useState([]);
+  const [message, setMessage] =
+    useState("");
 
-  const [users, setUsers] = useState([]);
+  const [chat, setChat] =
+    useState([]);
+
+  const [users, setUsers] =
+    useState([]);
+
   const [typingUser, setTypingUser] =
     useState("");
 
   const [showEmojiPicker, setShowEmojiPicker] =
     useState(false);
 
-  const [image, setImage] = useState(null);
-
-  const [replyingTo, setReplyingTo] =
+  const [image, setImage] =
     useState(null);
 
   const [mediaRecorder, setMediaRecorder] =
@@ -37,7 +50,8 @@ function App() {
   const [isRecording, setIsRecording] =
     useState(false);
 
-  const [audio, setAudio] = useState(null);
+  const [audio, setAudio] =
+    useState(null);
 
   const chatEndRef = useRef(null);
 
@@ -91,33 +105,13 @@ function App() {
       room.trim() !== ""
     ) {
 
-      if (socket.connected) {
+      socket.emit("join_room", {
+        room: room.trim(),
+        username:
+          username.trim(),
+      });
 
-  socket.emit("join_room", {
-    room,
-    username,
-  });
-
-} else {
-
-  socket.on("connect", () => {
-
-    socket.emit("join_room", {
-      room,
-      username,
-    });
-
-  });
-
-}
-
-setJoined(true);
-
-setUsers([
-  {
-    username,
-  },
-]);
+      setJoined(true);
 
     }
 
@@ -200,7 +194,10 @@ setUsers([
     ) {
 
       const msgData = {
-        id: Date.now(),
+
+        id:
+          Date.now() +
+          Math.random(),
 
         room,
 
@@ -212,15 +209,12 @@ setUsers([
 
         audio,
 
-        replyTo: replyingTo,
-
-        reactions: {},
-
         time:
           new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
+
       };
 
       socket.emit(
@@ -236,44 +230,18 @@ setUsers([
       setMessage("");
       setImage(null);
       setAudio(null);
-      setReplyingTo(null);
       setShowEmojiPicker(false);
 
+      // MOBILE SIDEBAR CLOSE
+      if (
+        window.innerWidth < 768
+      ) {
+
+        setShowSidebar(false);
+
+      }
+
     }
-
-  };
-
-  // REACTIONS
-  const addReaction = (
-    messageId,
-    emoji
-  ) => {
-
-    setChat((prev) =>
-      prev.map((msg) => {
-
-        if (msg.id === messageId) {
-
-          const reactions =
-            msg.reactions || {};
-
-          return {
-            ...msg,
-
-            reactions: {
-              ...reactions,
-
-              [emoji]:
-                (reactions[emoji] || 0) + 1,
-            },
-          };
-
-        }
-
-        return msg;
-
-      })
-    );
 
   };
 
@@ -281,13 +249,17 @@ setUsers([
   const onEmojiClick = (emojiData) => {
 
     setMessage(
-      (prev) => prev + emojiData.emoji
+      (prev) =>
+        prev + emojiData.emoji
     );
 
   };
 
   // SOCKET EVENTS
   useEffect(() => {
+
+    // ROOM HISTORY
+    socket.off("room_history");
 
     socket.on(
       "room_history",
@@ -296,6 +268,11 @@ setUsers([
         setChat(messages);
 
       }
+    );
+
+    // RECEIVE MESSAGE
+    socket.off(
+      "receive_message"
     );
 
     socket.on(
@@ -310,21 +287,24 @@ setUsers([
       }
     );
 
-socket.off("room_users");
+    // USERS
+    socket.off("room_users");
 
-socket.on(
-  "room_users",
-  (usersList) => {
+    socket.on(
+      "room_users",
+      (usersList) => {
 
-    console.log(
-      "ONLINE USERS:",
-      usersList
+        setUsers([
+          ...usersList,
+        ]);
+
+      }
     );
 
-    setUsers(usersList || []);
-
-  }
-);
+    // SYSTEM MESSAGE
+    socket.off(
+      "system_message"
+    );
 
     socket.on(
       "system_message",
@@ -338,27 +318,25 @@ socket.on(
       }
     );
 
-    socket.on("typing", (data) => {
+    // TYPING
+    socket.off("typing");
 
-      setTypingUser(data.username);
+    socket.on(
+      "typing",
+      (data) => {
 
-      setTimeout(() => {
+        setTypingUser(
+          data.username
+        );
 
-        setTypingUser("");
+        setTimeout(() => {
 
-      }, 1500);
+          setTypingUser("");
 
-    });
+        }, 1500);
 
-    return () => {
-
-      socket.off("room_history");
-      socket.off("receive_message");
-      socket.off("room_users");
-      socket.off("system_message");
-      socket.off("typing");
-
-    };
+      }
+    );
 
   }, []);
 
@@ -375,9 +353,10 @@ socket.on(
   if (!joined) {
 
     return (
+
       <div className="h-[100dvh] relative overflow-hidden flex items-center justify-center bg-black py-3 px-4">
 
-        {/* BACKGROUND */}
+        {/* BG */}
         <div className="absolute w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-20 top-[-100px] left-[-100px]"></div>
 
         <div className="absolute w-[400px] h-[400px] bg-cyan-500 rounded-full blur-[120px] opacity-20 bottom-[-100px] right-[-100px]"></div>
@@ -401,16 +380,17 @@ socket.on(
 
           </h1>
 
-          <p className="text-slate-300 text-center mb-8">
+          <p className="text-slate-300 text-center mb-2">
 
             Secure • Temporary • Private
 
           </p>
+
           <p className="text-slate-500 text-sm text-center mb-6">
 
-              End-to-end temporary conversations
+            End-to-end temporary conversations
 
-            </p>
+          </p>
 
           {/* USERNAME */}
           <input
@@ -418,7 +398,9 @@ socket.on(
             placeholder="Choose Username"
             value={username}
             onChange={(e) =>
-              setUsername(e.target.value)
+              setUsername(
+                e.target.value
+              )
             }
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all"
           />
@@ -429,7 +411,9 @@ socket.on(
             placeholder="Enter Room ID"
             value={room}
             onChange={(e) =>
-              setRoom(e.target.value)
+              setRoom(
+                e.target.value
+              )
             }
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all mt-4"
           />
@@ -445,6 +429,7 @@ socket.on(
 
           )}
 
+          {/* GENERATE */}
           <button
             onClick={generateRoom}
             className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all text-white p-4 rounded-2xl font-semibold"
@@ -454,6 +439,7 @@ socket.on(
 
           </button>
 
+          {/* JOIN */}
           <button
             onClick={joinChat}
             className="w-full mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all text-white p-4 rounded-2xl font-bold shadow-2xl"
@@ -466,20 +452,24 @@ socket.on(
         </div>
 
       </div>
+
     );
 
   }
 
-  // MAIN CHAT SCREEN
+  // MAIN CHAT
   return (
 
     <div className="h-[100dvh] bg-black flex overflow-hidden">
 
       {/* SIDEBAR */}
       <div
-  className={`${
-    showSidebar ? "flex" : "hidden"
-  } md:flex w-[240px] fixed md:relative z-50 h-full bg-slate-950 border-r border-slate-800 flex-col`}>
+        className={`${
+          showSidebar
+            ? "translate-x-0"
+            : "-translate-x-full"
+        } md:translate-x-0 fixed md:relative top-0 left-0 z-50 h-full w-[85vw] max-w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col transition-transform duration-300`}
+      >
 
         <div className="p-6 border-b border-slate-800">
 
@@ -506,7 +496,7 @@ socket.on(
 
           </p>
 
-          <div className="mt-2 bg-slate-900 p-2 md:p-3 rounded-xl text-cyan-400 text-sm break-all">
+          <div className="mt-2 bg-slate-900 p-3 rounded-xl text-cyan-400 text-sm break-all">
 
             {room}
 
@@ -515,7 +505,7 @@ socket.on(
         </div>
 
         {/* USERS */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5">
 
           <div className="flex justify-between items-center mb-5">
 
@@ -533,46 +523,50 @@ socket.on(
 
           </div>
 
-          <div className="flex flex-col gap-2 md:gap-3">
+          <div className="flex flex-col gap-3">
 
-            {users.map((user, index) => (
-
-              <div
-                key={index}
-                className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3"
-              >
+            {users.map(
+              (user, index) => (
 
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
-                    user.username
-                  )}`}
+                  key={index}
+                  className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3"
                 >
 
-                  {user.username
-                    .charAt(0)
-                    .toUpperCase()}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
+                      user.username
+                    )}`}
+                  >
 
-                </div>
-
-                <div>
-
-                  <div className="text-white text-sm font-medium">
-
-                    {user.username}
+                    {user.username
+                      ?.charAt(0)
+                      .toUpperCase()}
 
                   </div>
 
-                  <div className="text-green-400 text-xs">
+                  <div>
 
-                    Online
+                    <div className="text-white text-sm font-medium">
+
+                      {
+                        user.username
+                      }
+
+                    </div>
+
+                    <div className="text-green-400 text-xs">
+
+                      Online
+
+                    </div>
 
                   </div>
 
                 </div>
 
-              </div>
-
-            ))}
+              )
+            )}
 
           </div>
 
@@ -599,6 +593,7 @@ socket.on(
               Temporary conversation
 
             </p>
+
             <div className="md:hidden mt-2 flex items-center gap-2">
 
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
@@ -612,29 +607,37 @@ socket.on(
             </div>
 
           </div>
-          
 
           <div className="flex items-center gap-3">
+
+            {/* MOBILE MENU */}
             <button
-                  onClick={() =>
-                    setShowSidebar(!showSidebar)
-                  }
-                  className="md:hidden bg-slate-800 text-white w-10 h-10 rounded-xl flex items-center justify-center"
-                >
+              onClick={() =>
+                setShowSidebar(
+                  !showSidebar
+                )
+              }
+              className="md:hidden bg-slate-800 text-white w-10 h-10 rounded-xl flex items-center justify-center"
+            >
 
-                  ☰
+              ☰
 
-                </button>
-                <div className="hidden md:flex items-center gap-2 bg-slate-900/70 px-3 py-2 rounded-xl border border-slate-700">
-                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            </button>
 
-                  <span className="text-sm text-white">
+            {/* DESKTOP ONLINE */}
+            <div className="hidden md:flex items-center gap-2 bg-slate-900/70 px-3 py-2 rounded-xl border border-slate-700">
 
-                    {users.length} Online
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
 
-                  </span>
+              <span className="text-sm text-white">
 
-                </div>
+                {users.length} Online
+
+              </span>
+
+            </div>
+
+            {/* AVATAR */}
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
                 username
@@ -642,7 +645,7 @@ socket.on(
             >
 
               {username
-                .charAt(0)
+                ?.charAt(0)
                 .toUpperCase()}
 
             </div>
@@ -658,109 +661,112 @@ socket.on(
         </div>
 
         {/* CHAT AREA */}
-        <div className="flex-1 min-w-0 overflow-y-auto px-2 md:px-4 py-4 md:py-6 flex flex-col gap-2 max-w-[900px] px-2 md:px-4 w-full mx-auto">
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-4 md:py-6 flex flex-col gap-2 max-w-[900px] w-full mx-auto">
 
-          {chat.map((msg, index) => (
+          {chat.map(
+            (msg, index) => (
 
-            <div
-              key={index}
-              className={
-                msg.system
-                  ? "self-center"
-                  : msg.user === username
-                  ? "self-end mr-1 md:mr-2"
-                  : "self-start ml-1 md:ml-2"
-              }
-            >
-
-              {/* USERNAME */}
-              {!msg.system &&
-                msg.user !== username && (
-
-                  <p className="text-[11px] text-cyan-300 mb-1 ml-2 font-medium">
-
-                    {msg.user}
-
-                  </p>
-
-              )}
-
-              <motion.div
-                initial={{
-                  opacity: 0,
-                  y: 10,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  duration: 0.2,
-                }}
-                className={`group inline-block w-auto max-w-[85vw] md:max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
+              <div
+                key={index}
+                className={
                   msg.system
-                    ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
-                    : msg.user === username
-                    ? "bg-[#3797F0] text-white"
-                    : "bg-[#262626] text-white"
-                }`}
+                    ? "self-center"
+                    : msg.user ===
+                      username
+                    ? "self-end mr-1 md:mr-2"
+                    : "self-start ml-1 md:ml-2"
+                }
               >
 
-                {/* TEXT + TIME */}
-                {msg.text && (
+                {/* USERNAME */}
+                {!msg.system &&
+                  msg.user !==
+                    username && (
 
-                  <div className="flex items-center gap-1">
+                    <p className="text-[11px] text-cyan-300 mb-1 ml-2 font-medium">
 
-                    <span className="text-[15px] break-words">
+                      {msg.user}
 
-                      {msg.text}
-
-                    </span>
-
-                    <span className="text-[10px] opacity-60 whitespace-nowrap">
-
-                      {msg.time}
-
-                    </span>
-
-                  </div>
+                    </p>
 
                 )}
 
-                {/* IMAGE */}
-                {msg.image && (
+                {/* BUBBLE */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 10,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.2,
+                  }}
+                  className={`group inline-block w-auto max-w-[85vw] md:max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
+                    msg.system
+                      ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
+                      : msg.user ===
+                        username
+                      ? "bg-[#3797F0] text-white"
+                      : "bg-[#262626] text-white"
+                  }`}
+                >
 
-                  <img
-                    src={msg.image}
-                    alt="shared"
-                    className="mt-2 rounded-2xl max-w-full"
-                  />
+                  {/* TEXT */}
+                  {msg.text && (
 
-                )}
+                    <div className="flex items-center gap-1">
 
-                {/* AUDIO */}
-                {msg.audio && (
+                      <span className="text-[15px] break-words">
 
-                  <div className="mt-2 bg-black/20 rounded-xl p-2">
+                        {msg.text}
+
+                      </span>
+
+                      <span className="text-[10px] opacity-60 whitespace-nowrap">
+
+                        {msg.time}
+
+                      </span>
+
+                    </div>
+
+                  )}
+
+                  {/* IMAGE */}
+                  {msg.image && (
+
+                    <img
+                      src={msg.image}
+                      alt="shared"
+                      className="mt-2 rounded-2xl max-w-full"
+                    />
+
+                  )}
+
+                  {/* AUDIO */}
+                  {msg.audio && (
+
                     <div className="mt-2 bg-black/20 rounded-xl p-2">
 
-                        <audio
-                          controls
-                          src={msg.audio}
-                          className="w-[160px] md:w-[220px] h-8"
-                        />
+                      <audio
+                        controls
+                        src={msg.audio}
+                        className="w-[160px] md:w-[220px] h-8"
+                      />
 
-                      </div>
+                    </div>
 
-                  </div>
+                  )}
 
-                )}
+                </motion.div>
 
-              </motion.div>
+              </div>
 
-            </div>
-
-          ))}
+            )
+          )}
 
           <div ref={chatEndRef}></div>
 
@@ -768,7 +774,8 @@ socket.on(
 
         {/* TYPING */}
         {typingUser &&
-          typingUser !== username && (
+          typingUser !==
+            username && (
 
             <div className="px-4 pb-2 text-sm text-cyan-400 animate-pulse">
 
@@ -776,61 +783,62 @@ socket.on(
 
             </div>
 
-          )}
-          {/* IMAGE PREVIEW */}
-{image && (
+        )}
 
-  <div className="px-4 pb-2">
+        {/* IMAGE PREVIEW */}
+        {image && (
 
-    <div className="relative inline-block">
+          <div className="px-4 pb-2">
 
-      <img
-        src={image}
-        alt="preview"
-        className="w-28 rounded-2xl border border-slate-700"
-      />
+            <div className="relative inline-block">
 
-      <button
-        onClick={() =>
-          setImage(null)
-        }
-        className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-sm"
-      >
+              <img
+                src={image}
+                alt="preview"
+                className="w-28 rounded-2xl border border-slate-700"
+              />
 
-        ×
+              <button
+                onClick={() =>
+                  setImage(null)
+                }
+                className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-sm"
+              >
 
-      </button>
+                ×
 
-    </div>
+              </button>
 
-  </div>
+            </div>
 
-)}
+          </div>
 
-{/* AUDIO PREVIEW */}
-{audio && (
+        )}
 
-  <div className="px-4 pb-2">
+        {/* AUDIO PREVIEW */}
+        {audio && (
 
-    <div className="bg-slate-900 rounded-2xl p-2 w-fit">
+          <div className="px-4 pb-2">
 
-      <audio
-        controls
-        src={audio}
-        className="h-8"
-      />
+            <div className="bg-slate-900 rounded-2xl p-2 w-fit">
 
-    </div>
+              <audio
+                controls
+                src={audio}
+                className="h-8"
+              />
 
-  </div>
+            </div>
 
-)}
+          </div>
+
+        )}
 
         {/* INPUT */}
         <div className="p-3 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex gap-3 items-center">
 
           {/* IMAGE */}
-          <label className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px]rounded-2xl h-10 md:h-[52px] flex items-center justify-center cursor-pointer">
+          <label className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl flex items-center justify-center cursor-pointer">
 
             📷
 
@@ -844,12 +852,14 @@ socket.on(
             />
 
           </label>
-          
+
           {/* MIC */}
           <button
             onClick={() => {
 
-              if (isRecording) {
+              if (
+                isRecording
+              ) {
 
                 stopRecording();
 
@@ -860,7 +870,7 @@ socket.on(
               }
 
             }}
-            className={`w-10 md:w-[50px]h-10 md:h-[52px]rounded-2xlh-10 md:h-[52px]text-white ${
+            className={`w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl text-white flex items-center justify-center ${
               isRecording
                 ? "bg-red-500 animate-pulse"
                 : "bg-slate-800 hover:bg-slate-700"
@@ -880,7 +890,7 @@ socket.on(
                   !showEmojiPicker
                 )
               }
-              className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px]h-10 md:h-[52px] rounded-2xl h-10 md:h-[52px]"
+              className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl"
             >
 
               😀
@@ -915,10 +925,13 @@ socket.on(
                 e.target.value
               );
 
-              socket.emit("typing", {
-                room,
-                username,
-              });
+              socket.emit(
+                "typing",
+                {
+                  room,
+                  username,
+                }
+              );
 
             }}
             onKeyDown={(e) => {
@@ -932,7 +945,7 @@ socket.on(
               }
 
             }}
-            className="flex-1 min-w-0 px-5 h-10 md:h-[50px]rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
+            className="flex-1 min-w-0 px-5 h-10 md:h-[50px] rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
           />
 
           {/* SEND */}
@@ -944,7 +957,7 @@ socket.on(
               scale: 1.03,
             }}
             onClick={sendMessage}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all w-10 md:px-8 h-[46px] md:h-10 md:h-[50px]w-[70px] md:w-[110px]  rounded-2xl text-white font-semibold"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all w-[70px] md:w-[110px] h-10 md:h-[50px] rounded-2xl text-white font-semibold"
           >
 
             Send
@@ -956,6 +969,7 @@ socket.on(
       </div>
 
     </div>
+
   );
 
 }
