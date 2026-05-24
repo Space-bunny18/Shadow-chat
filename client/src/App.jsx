@@ -571,6 +571,17 @@ function App() {
               Temporary conversation
 
             </p>
+            <div className="md:hidden mt-2 flex items-center gap-2">
+
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+
+              <span className="text-xs text-slate-300">
+
+                {users.length} online
+
+              </span>
+
+            </div>
 
           </div>
           
@@ -586,6 +597,16 @@ function App() {
                   ☰
 
                 </button>
+                <div className="hidden md:flex items-center gap-2 bg-slate-900/70 px-3 py-2 rounded-xl border border-slate-700">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+
+                  <span className="text-sm text-white">
+
+                    {users.length} Online
+
+                  </span>
+
+                </div>
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
                 username
