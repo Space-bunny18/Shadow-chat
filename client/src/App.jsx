@@ -91,12 +91,33 @@ function App() {
       room.trim() !== ""
     ) {
 
-      socket.emit("join_room", {
-        room,
-        username,
-      });
+      if (socket.connected) {
 
-      setJoined(true);
+  socket.emit("join_room", {
+    room,
+    username,
+  });
+
+} else {
+
+  socket.on("connect", () => {
+
+    socket.emit("join_room", {
+      room,
+      username,
+    });
+
+  });
+
+}
+
+setJoined(true);
+
+setUsers([
+  {
+    username,
+  },
+]);
 
     }
 
@@ -289,14 +310,21 @@ function App() {
       }
     );
 
-    socket.on(
-      "room_users",
-      (usersList) => {
+socket.off("room_users");
 
-        setUsers(usersList);
+socket.on(
+  "room_users",
+  (usersList) => {
 
-      }
+    console.log(
+      "ONLINE USERS:",
+      usersList
     );
+
+    setUsers(usersList || []);
+
+  }
+);
 
     socket.on(
       "system_message",
