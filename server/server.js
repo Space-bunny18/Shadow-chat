@@ -16,15 +16,18 @@ const io = new Server(server, {
   },
 });
 
-// STORE ROOM MESSAGES
+// STORE ALL ROOM MESSAGES
 const roomMessages = {};
 
-// STORE ROOM USERS
+// STORE ALL ROOM USERS
 const roomUsers = {};
 
 io.on("connection", (socket) => {
 
-  console.log("User connected:", socket.id);
+  console.log(
+    "USER CONNECTED:",
+    socket.id
+  );
 
   // JOIN ROOM
   socket.on(
@@ -43,20 +46,29 @@ io.on("connection", (socket) => {
 
       }
 
-      // REMOVE DUPLICATES
-      roomUsers[room] =
-        roomUsers[room].filter(
+      // CHECK IF USER ALREADY EXISTS
+      const existingUser =
+        roomUsers[room].find(
           (user) =>
-            user.id !== socket.id
+            user.username === username
         );
 
-      // ADD USER
-      roomUsers[room].push({
-        id: socket.id,
-        username,
-      });
+      // ADD USER ONLY IF NOT EXISTS
+      if (!existingUser) {
 
-      // SEND USERS LIST
+        roomUsers[room].push({
+          id: socket.id,
+          username,
+        });
+
+      }
+
+      console.log(
+        "ROOM USERS:",
+        roomUsers[room]
+      );
+
+      // SEND UPDATED USERS
       io.to(room).emit(
         "room_users",
         roomUsers[room]
@@ -75,9 +87,12 @@ io.on("connection", (socket) => {
         roomMessages[room]
       );
 
-      // SYSTEM MESSAGE
-      const systemMessage = {
-        id: Date.now(),
+      // SYSTEM JOIN MESSAGE
+      const joinMessage = {
+
+        id:
+          Date.now() +
+          Math.random(),
 
         system: true,
 
@@ -88,47 +103,48 @@ io.on("connection", (socket) => {
             hour: "2-digit",
             minute: "2-digit",
           }),
+
       };
 
       roomMessages[room].push(
-        systemMessage
+        joinMessage
       );
 
       io.to(room).emit(
         "system_message",
-        systemMessage
+        joinMessage
       );
 
     }
   );
 
-  // SEND MESSAGE
+  // SEND CHAT MESSAGE
   socket.on(
     "send_message",
-    (data) => {
+    (messageData) => {
 
-      const room = data.room;
+      const room =
+        messageData.room;
 
-      // CREATE ROOM STORAGE
       if (!roomMessages[room]) {
 
         roomMessages[room] = [];
 
       }
 
-      // SAVE MESSAGE
-      roomMessages[room].push(data);
+      roomMessages[room].push(
+        messageData
+      );
 
-      // SEND TO OTHERS
-      socket.to(room).emit(
+      io.to(room).emit(
         "receive_message",
-        data
+        messageData
       );
 
     }
   );
 
-  // TYPING
+  // TYPING EVENT
   socket.on(
     "typing",
     ({ room, username }) => {
@@ -144,94 +160,110 @@ io.on("connection", (socket) => {
   );
 
   // DISCONNECT
-  socket.on("disconnect", () => {
+  socket.on(
+    "disconnect",
+    () => {
 
-    console.log(
-      "User disconnected:",
-      socket.id
-    );
-
-    const room = socket.room;
-
-    if (
-      room &&
-      roomUsers[room]
-    ) {
-
-      // REMOVE USER
-      roomUsers[room] =
-        roomUsers[room].filter(
-          (user) =>
-            user.id !== socket.id
-        );
-
-      // UPDATE USERS
-      io.to(room).emit(
-        "room_users",
-        roomUsers[room]
+      console.log(
+        "USER DISCONNECTED:",
+        socket.id
       );
 
-      // LEAVE MESSAGE
-      const leaveMessage = {
-        id: Date.now(),
+      const room =
+        socket.room;
 
-        system: true,
-
-        text: `${socket.username} left the chat`,
-
-        time:
-          new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-      };
-
-      if (!roomMessages[room]) {
-
-        roomMessages[room] = [];
-
-      }
-
-      roomMessages[room].push(
-        leaveMessage
-      );
-
-      io.to(room).emit(
-        "system_message",
-        leaveMessage
-      );
-
-      // DELETE EMPTY ROOM
       if (
-        roomUsers[room].length === 0
+        room &&
+        roomUsers[room]
       ) {
 
-        delete roomUsers[room];
+        // REMOVE USER
+        roomUsers[room] =
+          roomUsers[room].filter(
+            (user) =>
+              user.id !== socket.id
+          );
 
-        delete roomMessages[room];
+        // UPDATE USERS
+        io.to(room).emit(
+          "room_users",
+          roomUsers[room]
+        );
+
+        // LEAVE MESSAGE
+        const leaveMessage = {
+
+          id:
+            Date.now() +
+            Math.random(),
+
+          system: true,
+
+          text: `${socket.username} left the chat`,
+
+          time:
+            new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+
+        };
+
+        if (!roomMessages[room]) {
+
+          roomMessages[room] = [];
+
+        }
+
+        roomMessages[room].push(
+          leaveMessage
+        );
+
+        io.to(room).emit(
+          "system_message",
+          leaveMessage
+        );
+
+        console.log(
+          "UPDATED USERS:",
+          roomUsers[room]
+        );
+
+        // DELETE EMPTY ROOM
+        if (
+          roomUsers[room].length === 0
+        ) {
+
+          delete roomUsers[room];
+
+          delete roomMessages[room];
+
+        }
 
       }
 
     }
-
-  });
+  );
 
 });
 
 // TEST ROUTE
 app.get("/", (req, res) => {
 
-  res.send("Shadow Chat Server Running");
+  res.send(
+    "Shadow Chat Server Running"
+  );
 
 });
 
 // START SERVER
-const PORT = 5000;
+const PORT =
+  process.env.PORT || 5000;
 
 server.listen(PORT, () => {
 
   console.log(
-    `Server running on port ${PORT}`
+    `SERVER RUNNING ON ${PORT}`
   );
 
 });
