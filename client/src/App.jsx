@@ -11,6 +11,7 @@ function App() {
   const [room, setRoom] = useState("");
   const [generatedRoom, setGeneratedRoom] =
     useState("");
+
   const [joined, setJoined] = useState(false);
 
   const [message, setMessage] = useState("");
@@ -25,11 +26,9 @@ function App() {
 
   const [image, setImage] = useState(null);
 
-  // REPLY
   const [replyingTo, setReplyingTo] =
     useState(null);
 
-  // VOICE STATES
   const [mediaRecorder, setMediaRecorder] =
     useState(null);
 
@@ -51,7 +50,6 @@ function App() {
     "bg-red-500",
   ];
 
-  // AVATAR COLOR
   const getAvatarColor = (name) => {
 
     let total = 0;
@@ -73,7 +71,9 @@ function App() {
 
     const randomRoom =
       "room-" +
-      Math.random().toString(36).substring(2, 8);
+      Math.random()
+        .toString(36)
+        .substring(2, 8);
 
     setRoom(randomRoom);
 
@@ -81,7 +81,7 @@ function App() {
 
   };
 
-  // JOIN CHAT
+  // JOIN ROOM
   const joinChat = () => {
 
     if (
@@ -178,20 +178,32 @@ function App() {
 
       const msgData = {
         id: Date.now(),
+
         room,
+
         user: username,
+
         text: message,
+
         image,
+
         audio,
+
         replyTo: replyingTo,
+
         reactions: {},
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+
+        time:
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
       };
 
-      socket.emit("send_message", msgData);
+      socket.emit(
+        "send_message",
+        msgData
+      );
 
       setChat((prev) => [
         ...prev,
@@ -199,20 +211,16 @@ function App() {
       ]);
 
       setMessage("");
-
       setImage(null);
-
       setAudio(null);
-
       setReplyingTo(null);
-
       setShowEmojiPicker(false);
 
     }
 
   };
 
-  // MESSAGE REACTION
+  // REACTIONS
   const addReaction = (
     messageId,
     emoji
@@ -228,8 +236,10 @@ function App() {
 
           return {
             ...msg,
+
             reactions: {
               ...reactions,
+
               [emoji]:
                 (reactions[emoji] || 0) + 1,
             },
@@ -335,15 +345,17 @@ function App() {
   if (!joined) {
 
     return (
-      <div className="h-screen relative overflow-hidden flex items-center justify-center bg-black">
+      <div className="h-screen relative overflow-hidden flex items-center justify-center bg-black p-4">
 
-        <div className="absolute w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-20 top-[-100px] left-[-100px] animate-pulse"></div>
+        {/* BACKGROUND */}
+        <div className="absolute w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-20 top-[-100px] left-[-100px]"></div>
 
-        <div className="absolute w-[400px] h-[400px] bg-cyan-500 rounded-full blur-[120px] opacity-20 bottom-[-100px] right-[-100px] animate-pulse"></div>
+        <div className="absolute w-[400px] h-[400px] bg-cyan-500 rounded-full blur-[120px] opacity-20 bottom-[-100px] right-[-100px]"></div>
 
-        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-10 rounded-[30px] shadow-2xl w-[380px]">
+        {/* CARD */}
+        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[32px] shadow-2xl w-full max-w-[380px]">
 
-          <div className="flex justify-center mb-5">
+          <div className="flex justify-center mb-6">
 
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-3xl font-bold text-white shadow-2xl">
 
@@ -353,7 +365,7 @@ function App() {
 
           </div>
 
-          <h1 className="text-5xl font-extrabold text-center text-white mb-3 tracking-wide">
+          <h1 className="text-5xl font-extrabold text-center text-white mb-3">
 
             Shadow Chat
 
@@ -365,6 +377,7 @@ function App() {
 
           </p>
 
+          {/* USERNAME */}
           <input
             type="text"
             placeholder="Choose Username"
@@ -372,9 +385,10 @@ function App() {
             onChange={(e) =>
               setUsername(e.target.value)
             }
-            className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all duration-300"
+            className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all"
           />
 
+          {/* ROOM */}
           <input
             type="text"
             placeholder="Enter Room ID"
@@ -382,52 +396,36 @@ function App() {
             onChange={(e) =>
               setRoom(e.target.value)
             }
-            className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all duration-300 mt-4"
+            className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all mt-4"
           />
 
+          {/* GENERATED ROOM */}
           {generatedRoom && (
-            <div className="mt-4 bg-slate-900/70 border border-cyan-500 text-cyan-400 p-3 rounded-xl text-sm text-center">
 
-              Room Created:
-              <strong>
-                {" "}
-                {generatedRoom}
-              </strong>
+            <div className="mt-4 bg-slate-900 border border-cyan-500 text-cyan-400 p-3 rounded-xl text-sm text-center">
+
+              {generatedRoom}
 
             </div>
-          )}
 
-          {generatedRoom && (
-            <button
-              onClick={() => {
-
-                navigator.clipboard.writeText(
-                  generatedRoom
-                );
-
-                alert(
-                  "Room ID Copied!"
-                );
-
-              }}
-              className="w-full mt-3 bg-cyan-600 hover:bg-cyan-700 transition-all duration-300 text-white p-3 rounded-xl font-semibold"
-            >
-              Copy Invite Code
-            </button>
           )}
 
           <button
             onClick={generateRoom}
-            className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all duration-300 text-white p-4 rounded-2xl font-semibold border border-slate-700"
+            className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all text-white p-4 rounded-2xl font-semibold"
           >
-            Generate Private Room
+
+            Generate Room
+
           </button>
 
           <button
             onClick={joinChat}
-            className="w-full mt-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] transition-all duration-300 text-white p-4 rounded-2xl font-bold shadow-2xl"
+            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all text-white p-4 rounded-2xl font-bold shadow-2xl"
           >
+
             Enter Secure Chat
+
           </button>
 
         </div>
@@ -437,29 +435,37 @@ function App() {
 
   }
 
-  // CHAT SCREEN
+  // MAIN CHAT SCREEN
   return (
-    <div className="h-screen bg-black flex">
+
+    <div className="h-screen bg-black flex overflow-hidden">
 
       {/* SIDEBAR */}
-      <div className="w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col">
+      <div className="hidden md:flex w-[230px] bg-slate-950 border-r border-slate-800 flex-col">
 
         <div className="p-6 border-b border-slate-800">
 
           <h1 className="text-3xl font-bold text-white">
+
             Shadow Chat
+
           </h1>
 
           <p className="text-slate-400 mt-2 text-sm">
+
             Temporary Secure Rooms
+
           </p>
 
         </div>
 
+        {/* ROOM */}
         <div className="p-5 border-b border-slate-800">
 
           <p className="text-slate-400 text-sm">
+
             ROOM ID
+
           </p>
 
           <div className="mt-2 bg-slate-900 p-3 rounded-xl text-cyan-400 text-sm break-all">
@@ -470,12 +476,15 @@ function App() {
 
         </div>
 
+        {/* USERS */}
         <div className="flex-1 overflow-y-auto p-5">
 
           <div className="flex justify-between items-center mb-5">
 
             <h2 className="text-white font-semibold">
+
               Online Users
+
             </h2>
 
             <div className="bg-cyan-500 text-black text-xs px-2 py-1 rounded-full font-bold">
@@ -488,42 +497,44 @@ function App() {
 
           <div className="flex flex-col gap-3">
 
-            {users.map(
-              (user, index) => (
+            {users.map((user, index) => (
+
+              <div
+                key={index}
+                className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3"
+              >
 
                 <div
-                  key={index}
-                  className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-3"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
+                    user.username
+                  )}`}
                 >
 
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
-                      user.username
-                    )}`}
-                  >
-                    {user.username
-                      .charAt(0)
-                      .toUpperCase()}
+                  {user.username
+                    .charAt(0)
+                    .toUpperCase()}
+
+                </div>
+
+                <div>
+
+                  <div className="text-white text-sm font-medium">
+
+                    {user.username}
+
                   </div>
 
-                  <div>
+                  <div className="text-green-400 text-xs">
 
-                    <div className="text-white text-sm font-medium">
-
-                      {user.username}
-
-                    </div>
-
-                    <div className="text-green-400 text-xs">
-                      Online
-                    </div>
+                    Online
 
                   </div>
 
                 </div>
 
-              )
-            )}
+              </div>
+
+            ))}
 
           </div>
 
@@ -532,19 +543,23 @@ function App() {
       </div>
 
       {/* MAIN CHAT */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-black">
+      <div className="flex-1 flex flex-col bg-[radial-gradient(circle_at_top,#172554,black_60%)]">
 
         {/* NAVBAR */}
-        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-5 flex justify-between items-center">
+        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-4 md:p-5 flex justify-between items-center">
 
           <div>
 
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+
               Secure Room
+
             </h1>
 
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-400 text-xs md:text-sm mt-1">
+
               Temporary conversation
+
             </p>
 
           </div>
@@ -556,204 +571,122 @@ function App() {
                 username
               )}`}
             >
+
               {username
                 .charAt(0)
                 .toUpperCase()}
+
             </div>
 
-            <div className="text-white font-semibold">
+            <div className="hidden md:block text-white font-semibold">
+
               {username}
+
             </div>
 
           </div>
 
         </div>
 
-        {/* CHAT */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+        {/* CHAT AREA */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-2 max-w-[900px] w-full mx-auto">
 
           {chat.map((msg, index) => (
 
-            <motion.div
+            <div
               key={index}
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.25,
-              }}
-              className={`max-w-[340px] p-4 rounded-2xl shadow-lg ${
+              className={
                 msg.system
-                  ? "self-center text-slate-300 text-sm bg-slate-900/80 px-5 py-2 rounded-lg border border-cyan-500/20 backdrop-blur-md shadow-lg"
+                  ? "self-center"
                   : msg.user === username
-                  ? "bg-blue-600 self-end text-white"
-                  : "bg-slate-800 self-start text-white"
-              }`}
+                  ? "self-end mr-2"
+                  : "self-start ml-2"
+              }
             >
 
-              {!msg.system && (
+              {/* USERNAME */}
+              {!msg.system &&
+                msg.user !== username && (
 
-                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-[11px] text-cyan-300 mb-1 ml-2 font-medium">
 
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${getAvatarColor(
-                      msg.user
-                    )}`}
-                  >
-                    {msg.user
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
-
-                  <p className="text-sm opacity-80">
                     {msg.user}
-                  </p>
-
-                </div>
-
-              )}
-
-              {/* REPLY MESSAGE */}
-              {msg.replyTo && (
-
-                <div className="mb-3 border-l-4 border-cyan-400 bg-black/20 p-2 rounded-lg">
-
-                  <p className="text-xs text-cyan-400 font-semibold">
-
-                    {msg.replyTo.user}
 
                   </p>
 
-                  <p className="text-xs text-slate-300 truncate">
-
-                    {msg.replyTo.text || "Attachment"}
-
-                  </p>
-
-                </div>
-
               )}
 
-              {msg.text && (
-                <p>{msg.text}</p>
-              )}
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 10,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.2,
+                }}
+                className={`group inline-flex items-center w-auto max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
+                  msg.system
+                    ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
+                    : msg.user === username
+                    ? "bg-[#3797F0] text-white"
+                    : "bg-[#262626] text-white"
+                }`}
+              >
 
-              {msg.image && (
+                {/* TEXT + TIME */}
+                {msg.text && (
 
-                <img
-                  src={msg.image}
-                  alt="shared"
-                  className="mt-3 rounded-xl max-w-full border border-white/10"
-                />
+                  <div className="flex items-center gap-1">
 
-              )}
+                    <span className="text-[15px] break-words">
 
-              {msg.audio && (
+                      {msg.text}
 
-                <audio
-                  controls
-                  src={msg.audio}
-                  className="mt-3 w-full"
-                />
+                    </span>
 
-              )}
+                    <span className="text-[10px] opacity-60 whitespace-nowrap">
 
-              {/* REACTION BUTTONS */}
-              {!msg.system && (
+                      {msg.time}
 
-                <div className="relative group mt-3">
-
-                  <button className="text-xs text-slate-400 hover:text-white transition-all">
-
-                    Add Reaction 😊
-
-                  </button>
-
-                  <div className="absolute left-0 mt-2 hidden group-hover:flex gap-2 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl z-50">
-
-                    {[
-                      "👍",
-                      "❤️",
-                      "🔥",
-                      "😂",
-                    ].map((emoji) => (
-
-                      <button
-                        key={emoji}
-                        onClick={() =>
-                          addReaction(
-                            msg.id,
-                            emoji
-                          )
-                        }
-                        className="hover:scale-125 transition-all text-lg"
-                      >
-                        {emoji}
-                      </button>
-
-                    ))}
+                    </span>
 
                   </div>
 
-                </div>
+                )}
 
-              )}
+                {/* IMAGE */}
+                {msg.image && (
 
-              {/* REACTION COUNT */}
-              {msg.reactions && (
+                  <img
+                    src={msg.image}
+                    alt="shared"
+                    className="mt-2 rounded-2xl max-w-full"
+                  />
 
-                <div className="flex gap-2 mt-2 flex-wrap">
+                )}
 
-                  {Object.entries(
-                    msg.reactions
-                  ).map(
-                    ([emoji, count]) => (
+                {/* AUDIO */}
+                {msg.audio && (
 
-                      <div
-                        key={emoji}
-                        className="bg-slate-700 px-3 py-1 rounded-lg text-sm flex items-center gap-1"
-                      >
-                        <span>
-                          {emoji}
-                        </span>
+                  <div className="mt-2 bg-black/20 rounded-xl p-2">
 
-                        <span className="text-slate-300 text-xs">
-                          {count}
-                        </span>
+                    <audio
+                      controls
+                      src={msg.audio}
+                      className="w-[220px] h-8"
+                    />
 
-                      </div>
+                  </div>
 
-                    )
-                  )}
+                )}
 
-                </div>
+              </motion.div>
 
-              )}
-
-              {/* REPLY BUTTON */}
-              {!msg.system && (
-
-                <button
-                  onClick={() =>
-                    setReplyingTo(msg)
-                  }
-                  className="mt-3 text-xs text-cyan-400 hover:text-cyan-300 transition-all"
-                >
-                  Reply
-                </button>
-
-              )}
-
-              <p className="text-[11px] opacity-60 mt-2 text-right">
-                {msg.time}
-              </p>
-
-            </motion.div>
+            </div>
 
           ))}
 
@@ -765,7 +698,7 @@ function App() {
         {typingUser &&
           typingUser !== username && (
 
-            <div className="px-6 pb-2 text-sm text-cyan-400 animate-pulse">
+            <div className="px-4 pb-2 text-sm text-cyan-400 animate-pulse">
 
               {typingUser} is typing...
 
@@ -773,92 +706,11 @@ function App() {
 
           )}
 
-        {/* REPLY PREVIEW */}
-        {replyingTo && (
-
-          <div className="px-5 pb-3">
-
-            <div className="bg-slate-900 border border-cyan-500/30 rounded-xl p-3 flex justify-between items-center">
-
-              <div>
-
-                <p className="text-cyan-400 text-sm font-semibold">
-
-                  Replying to {replyingTo.user}
-
-                </p>
-
-                <p className="text-slate-300 text-sm truncate">
-
-                  {replyingTo.text || "Attachment"}
-
-                </p>
-
-              </div>
-
-              <button
-                onClick={() =>
-                  setReplyingTo(null)
-                }
-                className="text-red-400 hover:text-red-300 text-xl"
-              >
-                ×
-              </button>
-
-            </div>
-
-          </div>
-
-        )}
-
-        {/* IMAGE PREVIEW */}
-        {image && (
-
-          <div className="px-5 pb-3">
-
-            <div className="relative inline-block">
-
-              <img
-                src={image}
-                alt="preview"
-                className="w-40 rounded-2xl border border-slate-700 shadow-lg"
-              />
-
-              <button
-                onClick={() =>
-                  setImage(null)
-                }
-                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 w-7 h-7 rounded-full text-white font-bold shadow-lg"
-              >
-                ×
-              </button>
-
-            </div>
-
-          </div>
-
-        )}
-
-        {/* AUDIO PREVIEW */}
-        {audio && (
-
-          <div className="px-5 pb-3">
-
-            <audio
-              controls
-              src={audio}
-              className="w-full"
-            />
-
-          </div>
-
-        )}
-
-        {/* INPUT AREA */}
-        <div className="p-5 bg-white/5 backdrop-blur-lg border-t border-white/10 flex gap-4 items-center">
+        {/* INPUT */}
+        <div className="p-3 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex gap-3 items-center">
 
           {/* IMAGE */}
-          <label className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-xl h-[56px] flex items-center justify-center cursor-pointer">
+          <label className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px] flex items-center justify-center cursor-pointer">
 
             📷
 
@@ -873,7 +725,7 @@ function App() {
 
           </label>
 
-          {/* VOICE */}
+          {/* MIC */}
           <button
             onClick={() => {
 
@@ -888,13 +740,15 @@ function App() {
               }
 
             }}
-            className={`px-4 rounded-xl h-[56px] text-white ${
+            className={`px-4 rounded-2xl h-[50px] text-white ${
               isRecording
                 ? "bg-red-500 animate-pulse"
                 : "bg-slate-800 hover:bg-slate-700"
             }`}
           >
+
             🎤
+
           </button>
 
           {/* EMOJI */}
@@ -906,14 +760,16 @@ function App() {
                   !showEmojiPicker
                 )
               }
-              className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-xl h-[56px]"
+              className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px]"
             >
+
               😀
+
             </button>
 
             {showEmojiPicker && (
 
-              <div className="absolute bottom-16 left-0 z-50">
+              <div className="absolute bottom-16 left-0 z-50 scale-90 origin-bottom-left">
 
                 <EmojiPicker
                   onEmojiClick={
@@ -956,7 +812,7 @@ function App() {
               }
 
             }}
-            className="flex-1 p-4 rounded-xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
+            className="flex-1 px-5 h-[50px] rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
           />
 
           {/* SEND */}
@@ -968,9 +824,11 @@ function App() {
               scale: 1.03,
             }}
             onClick={sendMessage}
-            className="bg-blue-600 hover:bg-blue-700 transition-all duration-300 px-8 h-[56px] rounded-xl text-white font-semibold"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all px-8 h-[50px] rounded-2xl text-white font-semibold"
           >
+
             Send
+
           </motion.button>
 
         </div>
