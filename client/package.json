@@ -1,5 +1,4 @@
-{
-  "name": "client",
+{  "name": "client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -36,4 +35,5 @@
     "tailwindcss": "^3.4.19",
     "vite": "^8.0.12"
   }
+  
 }
