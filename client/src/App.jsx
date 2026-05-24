@@ -13,6 +13,8 @@ function App() {
     useState("");
 
   const [joined, setJoined] = useState(false);
+  const [showSidebar, setShowSidebar] =
+  useState(false);
 
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
@@ -345,7 +347,7 @@ function App() {
   if (!joined) {
 
     return (
-      <div className="h-screen relative overflow-hidden flex items-center justify-center bg-black p-4">
+      <div className="h-[100dvh] relative overflow-hidden flex items-center justify-center bg-black py-3 px-4">
 
         {/* BACKGROUND */}
         <div className="absolute w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-20 top-[-100px] left-[-100px]"></div>
@@ -353,7 +355,7 @@ function App() {
         <div className="absolute w-[400px] h-[400px] bg-cyan-500 rounded-full blur-[120px] opacity-20 bottom-[-100px] right-[-100px]"></div>
 
         {/* CARD */}
-        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[32px] shadow-2xl w-full max-w-[380px]">
+        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[32px] shadow-2xl w-full max-w-[380px] mx-3">
 
           <div className="flex justify-center mb-6">
 
@@ -365,7 +367,7 @@ function App() {
 
           </div>
 
-          <h1 className="text-5xl font-extrabold text-center text-white mb-3">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-center text-white mb-3">
 
             Shadow Chat
 
@@ -376,6 +378,11 @@ function App() {
             Secure • Temporary • Private
 
           </p>
+          <p className="text-slate-500 text-sm text-center mb-6">
+
+              End-to-end temporary conversations
+
+            </p>
 
           {/* USERNAME */}
           <input
@@ -438,10 +445,13 @@ function App() {
   // MAIN CHAT SCREEN
   return (
 
-    <div className="h-screen bg-black flex overflow-hidden">
+    <div className="h-[100dvh] bg-black flex overflow-hidden">
 
       {/* SIDEBAR */}
-      <div className="hidden md:flex w-[230px] bg-slate-950 border-r border-slate-800 flex-col">
+      <div
+  className={`${
+    showSidebar ? "flex" : "hidden"
+  } md:flex w-[240px] fixed md:relative z-50 h-full bg-slate-950 border-r border-slate-800 flex-col`}>
 
         <div className="p-6 border-b border-slate-800">
 
@@ -468,7 +478,7 @@ function App() {
 
           </p>
 
-          <div className="mt-2 bg-slate-900 p-3 rounded-xl text-cyan-400 text-sm break-all">
+          <div className="mt-2 bg-slate-900 p-2 md:p-3 rounded-xl text-cyan-400 text-sm break-all">
 
             {room}
 
@@ -477,7 +487,7 @@ function App() {
         </div>
 
         {/* USERS */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 min-w-0 overflow-y-auto p-5">
 
           <div className="flex justify-between items-center mb-5">
 
@@ -495,7 +505,7 @@ function App() {
 
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 md:gap-3">
 
             {users.map((user, index) => (
 
@@ -543,10 +553,10 @@ function App() {
       </div>
 
       {/* MAIN CHAT */}
-      <div className="flex-1 flex flex-col bg-[radial-gradient(circle_at_top,#172554,black_60%)]">
+      <div className="flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top,#172554,black_60%)]">
 
         {/* NAVBAR */}
-        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-4 md:p-5 flex justify-between items-center">
+        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-3 md:p-5 flex justify-between items-center">
 
           <div>
 
@@ -563,9 +573,19 @@ function App() {
             </p>
 
           </div>
+          
 
           <div className="flex items-center gap-3">
+            <button
+                  onClick={() =>
+                    setShowSidebar(!showSidebar)
+                  }
+                  className="md:hidden bg-slate-800 text-white w-10 h-10 rounded-xl flex items-center justify-center"
+                >
 
+                  ☰
+
+                </button>
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
                 username
@@ -589,7 +609,7 @@ function App() {
         </div>
 
         {/* CHAT AREA */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-2 max-w-[900px] w-full mx-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto px-2 md:px-4 py-4 md:py-6 flex flex-col gap-2 max-w-[900px] px-2 md:px-4 w-full mx-auto">
 
           {chat.map((msg, index) => (
 
@@ -599,8 +619,8 @@ function App() {
                 msg.system
                   ? "self-center"
                   : msg.user === username
-                  ? "self-end mr-2"
-                  : "self-start ml-2"
+                  ? "self-end mr-1 md:mr-2"
+                  : "self-start ml-1 md:ml-2"
               }
             >
 
@@ -628,7 +648,7 @@ function App() {
                 transition={{
                   duration: 0.2,
                 }}
-                className={`group inline-block w-auto max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
+                className={`group inline-block w-auto max-w-[85vw] md:max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
                   msg.system
                     ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
                     : msg.user === username
@@ -673,12 +693,15 @@ function App() {
                 {msg.audio && (
 
                   <div className="mt-2 bg-black/20 rounded-xl p-2">
+                    <div className="mt-2 bg-black/20 rounded-xl p-2">
 
-                    <audio
-                      controls
-                      src={msg.audio}
-                      className="w-[220px] h-8"
-                    />
+                        <audio
+                          controls
+                          src={msg.audio}
+                          className="w-[160px] md:w-[220px] h-8"
+                        />
+
+                      </div>
 
                   </div>
 
@@ -758,7 +781,7 @@ function App() {
         <div className="p-3 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex gap-3 items-center">
 
           {/* IMAGE */}
-          <label className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px] flex items-center justify-center cursor-pointer">
+          <label className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px]rounded-2xl h-10 md:h-[52px] flex items-center justify-center cursor-pointer">
 
             📷
 
@@ -788,7 +811,7 @@ function App() {
               }
 
             }}
-            className={`px-4 rounded-2xl h-[50px] text-white ${
+            className={`w-10 md:w-[50px]h-10 md:h-[52px]rounded-2xlh-10 md:h-[52px]text-white ${
               isRecording
                 ? "bg-red-500 animate-pulse"
                 : "bg-slate-800 hover:bg-slate-700"
@@ -808,7 +831,7 @@ function App() {
                   !showEmojiPicker
                 )
               }
-              className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px]"
+              className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px]h-10 md:h-[52px] rounded-2xl h-10 md:h-[52px]"
             >
 
               😀
@@ -835,7 +858,7 @@ function App() {
           {/* INPUT */}
           <input
             type="text"
-            placeholder="Type a secure message..."
+            placeholder="Message..."
             value={message}
             onChange={(e) => {
 
@@ -860,7 +883,7 @@ function App() {
               }
 
             }}
-            className="flex-1 px-5 h-[50px] rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
+            className="flex-1 min-w-0 px-5 h-10 md:h-[50px]rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
           />
 
           {/* SEND */}
@@ -872,7 +895,7 @@ function App() {
               scale: 1.03,
             }}
             onClick={sendMessage}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all px-8 h-[50px] rounded-2xl text-white font-semibold"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all w-10 md:px-8 h-[46px] md:h-10 md:h-[50px]w-[70px] md:w-[110px]  rounded-2xl text-white font-semibold"
           >
 
             Send
