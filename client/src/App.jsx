@@ -628,7 +628,7 @@ function App() {
                 transition={{
                   duration: 0.2,
                 }}
-                className={`group inline-flex items-center w-auto max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
+                className={`group inline-block w-auto max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
                   msg.system
                     ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
                     : msg.user === username
@@ -705,6 +705,54 @@ function App() {
             </div>
 
           )}
+          {/* IMAGE PREVIEW */}
+{image && (
+
+  <div className="px-4 pb-2">
+
+    <div className="relative inline-block">
+
+      <img
+        src={image}
+        alt="preview"
+        className="w-28 rounded-2xl border border-slate-700"
+      />
+
+      <button
+        onClick={() =>
+          setImage(null)
+        }
+        className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-sm"
+      >
+
+        ×
+
+      </button>
+
+    </div>
+
+  </div>
+
+)}
+
+{/* AUDIO PREVIEW */}
+{audio && (
+
+  <div className="px-4 pb-2">
+
+    <div className="bg-slate-900 rounded-2xl p-2 w-fit">
+
+      <audio
+        controls
+        src={audio}
+        className="h-8"
+      />
+
+    </div>
+
+  </div>
+
+)}
 
         {/* INPUT */}
         <div className="p-3 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex gap-3 items-center">
@@ -724,7 +772,7 @@ function App() {
             />
 
           </label>
-
+          
           {/* MIC */}
           <button
             onClick={() => {
