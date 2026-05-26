@@ -5,14 +5,18 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "https://shadow-chat-cyan.vercel.app/",
+  credentials: true,
+}));
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://shadow-chat-cyan.vercel.app/",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
