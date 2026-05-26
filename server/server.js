@@ -9,11 +9,11 @@ app.use(cors());
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
+const io = require("socket.io")(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+    origin: "https://shadow-chat-9wtt.vercel.app/",
+    methods: ["GET", "POST"]
+  }
 });
 
 const roomMessages = {};
@@ -165,7 +165,6 @@ app.get("/", (req, res) => {
 });
 
 const PORT = 5000;
-
 server.listen(PORT, () => {
   console.log(`SERVER RUNNING ON ${PORT}`);
 });
