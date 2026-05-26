@@ -9,11 +9,11 @@ app.use(cors());
 
 const server = http.createServer(app);
 
-const io = require("socket.io")(server, {
+const io = new Server(server, {
   cors: {
-    origin: "https://shadow-chat-9wtt.vercel.app/",
-    methods: ["GET", "POST"]
-  }
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 
 const roomMessages = {};
