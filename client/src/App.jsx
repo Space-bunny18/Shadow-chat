@@ -1,47 +1,32 @@
 import { useEffect, useState, useRef } from "react";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
 import { motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 
-// SOCKET CONNECTION
-const socket = io(
-  "YOUR_RENDER_BACKEND_URL"
-);
+const socket = io("http://localhost:5000");
 
 function App() {
 
-  // STATES
-  const [username, setUsername] =
-    useState("");
-
-  const [room, setRoom] =
-    useState("");
-
+  const [username, setUsername] = useState("");
+  const [room, setRoom] = useState("");
   const [generatedRoom, setGeneratedRoom] =
     useState("");
 
-  const [joined, setJoined] =
-    useState(false);
+  const [joined, setJoined] = useState(false);
 
-  const [showSidebar, setShowSidebar] =
-    useState(false);
+  const [message, setMessage] = useState("");
+  const [chat, setChat] = useState([]);
 
-  const [message, setMessage] =
-    useState("");
-
-  const [chat, setChat] =
-    useState([]);
-
-  const [users, setUsers] =
-    useState([]);
-
+  const [users, setUsers] = useState([]);
   const [typingUser, setTypingUser] =
     useState("");
 
   const [showEmojiPicker, setShowEmojiPicker] =
     useState(false);
 
-  const [image, setImage] =
+  const [image, setImage] = useState(null);
+
+  const [replyingTo, setReplyingTo] =
     useState(null);
 
   const [mediaRecorder, setMediaRecorder] =
@@ -50,8 +35,7 @@ function App() {
   const [isRecording, setIsRecording] =
     useState(false);
 
-  const [audio, setAudio] =
-    useState(null);
+  const [audio, setAudio] = useState(null);
 
   const chatEndRef = useRef(null);
 
@@ -106,9 +90,8 @@ function App() {
     ) {
 
       socket.emit("join_room", {
-        room: room.trim(),
-        username:
-          username.trim(),
+        room,
+        username,
       });
 
       setJoined(true);
@@ -194,10 +177,7 @@ function App() {
     ) {
 
       const msgData = {
-
-        id:
-          Date.now() +
-          Math.random(),
+        id: Date.now(),
 
         room,
 
@@ -209,12 +189,15 @@ function App() {
 
         audio,
 
+        replyTo: replyingTo,
+
+        reactions: {},
+
         time:
           new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
-
       };
 
       socket.emit(
@@ -222,26 +205,48 @@ function App() {
         msgData
       );
 
-      setChat((prev) => [
-        ...prev,
-        msgData,
-      ]);
 
       setMessage("");
       setImage(null);
       setAudio(null);
+      setReplyingTo(null);
       setShowEmojiPicker(false);
 
-      // MOBILE SIDEBAR CLOSE
-      if (
-        window.innerWidth < 768
-      ) {
-
-        setShowSidebar(false);
-
-      }
-
     }
+
+  };
+
+  // REACTIONS
+  const addReaction = (
+    messageId,
+    emoji
+  ) => {
+
+    setChat((prev) =>
+      prev.map((msg) => {
+
+        if (msg.id === messageId) {
+
+          const reactions =
+            msg.reactions || {};
+
+          return {
+            ...msg,
+
+            reactions: {
+              ...reactions,
+
+              [emoji]:
+                (reactions[emoji] || 0) + 1,
+            },
+          };
+
+        }
+
+        return msg;
+
+      })
+    );
 
   };
 
@@ -249,17 +254,13 @@ function App() {
   const onEmojiClick = (emojiData) => {
 
     setMessage(
-      (prev) =>
-        prev + emojiData.emoji
+      (prev) => prev + emojiData.emoji
     );
 
   };
 
   // SOCKET EVENTS
   useEffect(() => {
-
-    // ROOM HISTORY
-    socket.off("room_history");
 
     socket.on(
       "room_history",
@@ -268,11 +269,6 @@ function App() {
         setChat(messages);
 
       }
-    );
-
-    // RECEIVE MESSAGE
-    socket.off(
-      "receive_message"
     );
 
     socket.on(
@@ -287,23 +283,13 @@ function App() {
       }
     );
 
-    // USERS
-    socket.off("room_users");
-
     socket.on(
       "room_users",
       (usersList) => {
 
-        setUsers([
-          ...usersList,
-        ]);
+        setUsers(usersList);
 
       }
-    );
-
-    // SYSTEM MESSAGE
-    socket.off(
-      "system_message"
     );
 
     socket.on(
@@ -318,25 +304,27 @@ function App() {
       }
     );
 
-    // TYPING
-    socket.off("typing");
+    socket.on("typing", (data) => {
 
-    socket.on(
-      "typing",
-      (data) => {
+      setTypingUser(data.username);
 
-        setTypingUser(
-          data.username
-        );
+      setTimeout(() => {
 
-        setTimeout(() => {
+        setTypingUser("");
 
-          setTypingUser("");
+      }, 1500);
 
-        }, 1500);
+    });
 
-      }
-    );
+    return () => {
+
+      socket.off("room_history");
+      socket.off("receive_message");
+      socket.off("room_users");
+      socket.off("system_message");
+      socket.off("typing");
+
+    };
 
   }, []);
 
@@ -353,16 +341,15 @@ function App() {
   if (!joined) {
 
     return (
+      <div className="h-screen relative overflow-hidden flex items-center justify-center bg-black p-4">
 
-      <div className="h-[100dvh] relative overflow-hidden flex items-center justify-center bg-black py-3 px-4">
-
-        {/* BG */}
+        {/* BACKGROUND */}
         <div className="absolute w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-20 top-[-100px] left-[-100px]"></div>
 
         <div className="absolute w-[400px] h-[400px] bg-cyan-500 rounded-full blur-[120px] opacity-20 bottom-[-100px] right-[-100px]"></div>
 
         {/* CARD */}
-        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[32px] shadow-2xl w-full max-w-[380px] mx-3">
+        <div className="relative z-10 bg-white/10 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[32px] shadow-2xl w-full max-w-[380px]">
 
           <div className="flex justify-center mb-6">
 
@@ -374,21 +361,15 @@ function App() {
 
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-extrabold text-center text-white mb-3">
+          <h1 className="text-5xl font-extrabold text-center text-white mb-3">
 
             Shadow Chat
 
           </h1>
 
-          <p className="text-slate-300 text-center mb-2">
+          <p className="text-slate-300 text-center mb-8">
 
             Secure • Temporary • Private
-
-          </p>
-
-          <p className="text-slate-500 text-sm text-center mb-6">
-
-            End-to-end temporary conversations
 
           </p>
 
@@ -398,9 +379,7 @@ function App() {
             placeholder="Choose Username"
             value={username}
             onChange={(e) =>
-              setUsername(
-                e.target.value
-              )
+              setUsername(e.target.value)
             }
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all"
           />
@@ -411,9 +390,7 @@ function App() {
             placeholder="Enter Room ID"
             value={room}
             onChange={(e) =>
-              setRoom(
-                e.target.value
-              )
+              setRoom(e.target.value)
             }
             className="w-full p-4 rounded-2xl bg-slate-950/60 text-white outline-none border border-slate-700 focus:border-cyan-400 transition-all mt-4"
           />
@@ -429,7 +406,6 @@ function App() {
 
           )}
 
-          {/* GENERATE */}
           <button
             onClick={generateRoom}
             className="w-full mt-4 bg-slate-800 hover:bg-slate-700 transition-all text-white p-4 rounded-2xl font-semibold"
@@ -439,7 +415,6 @@ function App() {
 
           </button>
 
-          {/* JOIN */}
           <button
             onClick={joinChat}
             className="w-full mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all text-white p-4 rounded-2xl font-bold shadow-2xl"
@@ -452,24 +427,17 @@ function App() {
         </div>
 
       </div>
-
     );
 
   }
 
-  // MAIN CHAT
+  // MAIN CHAT SCREEN
   return (
 
-    <div className="h-[100dvh] bg-black flex overflow-hidden">
+    <div className="h-screen bg-black flex overflow-hidden">
 
       {/* SIDEBAR */}
-      <div
-        className={`${
-          showSidebar
-            ? "translate-x-0"
-            : "-translate-x-full"
-        } md:translate-x-0 fixed md:relative top-0 left-0 z-50 h-full w-[85vw] max-w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col transition-transform duration-300`}
-      >
+      <div className="hidden md:flex w-[230px] bg-slate-950 border-r border-slate-800 flex-col">
 
         <div className="p-6 border-b border-slate-800">
 
@@ -525,48 +493,44 @@ function App() {
 
           <div className="flex flex-col gap-3">
 
-            {users.map(
-              (user, index) => (
+            {users.map((user, index) => (
+
+              <div
+                key={index}
+                className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3"
+              >
 
                 <div
-                  key={index}
-                  className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
+                    user.username
+                  )}`}
                 >
 
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
-                      user.username
-                    )}`}
-                  >
+                  {user.username
+                    .charAt(0)
+                    .toUpperCase()}
 
-                    {user.username
-                      ?.charAt(0)
-                      .toUpperCase()}
+                </div>
+
+                <div>
+
+                  <div className="text-white text-sm font-medium">
+
+                    {user.username}
 
                   </div>
 
-                  <div>
+                  <div className="text-green-400 text-xs">
 
-                    <div className="text-white text-sm font-medium">
-
-                      {
-                        user.username
-                      }
-
-                    </div>
-
-                    <div className="text-green-400 text-xs">
-
-                      Online
-
-                    </div>
+                    Online
 
                   </div>
 
                 </div>
 
-              )
-            )}
+              </div>
+
+            ))}
 
           </div>
 
@@ -575,10 +539,10 @@ function App() {
       </div>
 
       {/* MAIN CHAT */}
-      <div className="flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top,#172554,black_60%)]">
+      <div className="flex-1 flex flex-col bg-[radial-gradient(circle_at_top,#172554,black_60%)]">
 
         {/* NAVBAR */}
-        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-3 md:p-5 flex justify-between items-center">
+        <div className="bg-white/5 backdrop-blur-lg border-b border-white/10 p-4 md:p-5 flex justify-between items-center">
 
           <div>
 
@@ -594,50 +558,10 @@ function App() {
 
             </p>
 
-            <div className="md:hidden mt-2 flex items-center gap-2">
-
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-
-              <span className="text-xs text-slate-300">
-
-                {users.length} online
-
-              </span>
-
-            </div>
-
           </div>
 
           <div className="flex items-center gap-3">
 
-            {/* MOBILE MENU */}
-            <button
-              onClick={() =>
-                setShowSidebar(
-                  !showSidebar
-                )
-              }
-              className="md:hidden bg-slate-800 text-white w-10 h-10 rounded-xl flex items-center justify-center"
-            >
-
-              ☰
-
-            </button>
-
-            {/* DESKTOP ONLINE */}
-            <div className="hidden md:flex items-center gap-2 bg-slate-900/70 px-3 py-2 rounded-xl border border-slate-700">
-
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-
-              <span className="text-sm text-white">
-
-                {users.length} Online
-
-              </span>
-
-            </div>
-
-            {/* AVATAR */}
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
                 username
@@ -645,7 +569,7 @@ function App() {
             >
 
               {username
-                ?.charAt(0)
+                .charAt(0)
                 .toUpperCase()}
 
             </div>
@@ -661,112 +585,106 @@ function App() {
         </div>
 
         {/* CHAT AREA */}
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-4 md:py-6 flex flex-col gap-2 max-w-[900px] w-full mx-auto">
+        <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-2 max-w-[900px] w-full mx-auto">
 
-          {chat.map(
-            (msg, index) => (
+          {chat.map((msg, index) => (
 
-              <div
-                key={index}
-                className={
+            <div
+              key={index}
+              className={
+                msg.system
+                  ? "self-center"
+                  : msg.user === username
+                  ? "self-end mr-2"
+                  : "self-start ml-2"
+              }
+            >
+
+              {/* USERNAME */}
+              {!msg.system &&
+                msg.user !== username && (
+
+                  <p className="text-[11px] text-cyan-300 mb-1 ml-2 font-medium">
+
+                    {msg.user}
+
+                  </p>
+
+              )}
+
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 10,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.2,
+                }}
+                className={`group inline-block w-auto max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
                   msg.system
-                    ? "self-center"
-                    : msg.user ===
-                      username
-                    ? "self-end mr-1 md:mr-2"
-                    : "self-start ml-1 md:ml-2"
-                }
+                    ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
+                    : msg.user === username
+                    ? "bg-[#3797F0] text-white"
+                    : "bg-[#262626] text-white"
+                }`}
               >
 
-                {/* USERNAME */}
-                {!msg.system &&
-                  msg.user !==
-                    username && (
+                {/* TEXT + TIME */}
+                {msg.text && (
 
-                    <p className="text-[11px] text-cyan-300 mb-1 ml-2 font-medium">
+                  <div className="flex items-center gap-1">
 
-                      {msg.user}
+                    <span className="text-[15px] break-words">
 
-                    </p>
+                      {msg.text}
+
+                    </span>
+
+                    <span className="text-[10px] opacity-60 whitespace-nowrap">
+
+                      {msg.time}
+
+                    </span>
+
+                  </div>
 
                 )}
 
-                {/* BUBBLE */}
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 10,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.2,
-                  }}
-                  className={`group inline-block w-auto max-w-[85vw] md:max-w-[320px] px-4 py-2 rounded-[18px] transition-all duration-200 ${
-                    msg.system
-                      ? "text-[11px] text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-cyan-500/20"
-                      : msg.user ===
-                        username
-                      ? "bg-[#3797F0] text-white"
-                      : "bg-[#262626] text-white"
-                  }`}
-                >
+                {/* IMAGE */}
+                {msg.image && (
 
-                  {/* TEXT */}
-                  {msg.text && (
+                  <img
+                    src={msg.image}
+                    alt="shared"
+                    className="mt-2 rounded-2xl max-w-full"
+                  />
 
-                    <div className="flex items-center gap-1">
+                )}
 
-                      <span className="text-[15px] break-words">
+                {/* AUDIO */}
+                {msg.audio && (
 
-                        {msg.text}
+                  <div className="mt-2 bg-black/20 rounded-xl p-2">
 
-                      </span>
-
-                      <span className="text-[10px] opacity-60 whitespace-nowrap">
-
-                        {msg.time}
-
-                      </span>
-
-                    </div>
-
-                  )}
-
-                  {/* IMAGE */}
-                  {msg.image && (
-
-                    <img
-                      src={msg.image}
-                      alt="shared"
-                      className="mt-2 rounded-2xl max-w-full"
+                    <audio
+                      controls
+                      src={msg.audio}
+                      className="w-[220px] h-8"
                     />
 
-                  )}
+                  </div>
 
-                  {/* AUDIO */}
-                  {msg.audio && (
+                )}
 
-                    <div className="mt-2 bg-black/20 rounded-xl p-2">
+              </motion.div>
 
-                      <audio
-                        controls
-                        src={msg.audio}
-                        className="w-[160px] md:w-[220px] h-8"
-                      />
+            </div>
 
-                    </div>
-
-                  )}
-
-                </motion.div>
-
-              </div>
-
-            )
-          )}
+          ))}
 
           <div ref={chatEndRef}></div>
 
@@ -774,8 +692,7 @@ function App() {
 
         {/* TYPING */}
         {typingUser &&
-          typingUser !==
-            username && (
+          typingUser !== username && (
 
             <div className="px-4 pb-2 text-sm text-cyan-400 animate-pulse">
 
@@ -783,62 +700,61 @@ function App() {
 
             </div>
 
-        )}
+          )}
+          {/* IMAGE PREVIEW */}
+{image && (
 
-        {/* IMAGE PREVIEW */}
-        {image && (
+  <div className="px-4 pb-2">
 
-          <div className="px-4 pb-2">
+    <div className="relative inline-block">
 
-            <div className="relative inline-block">
+      <img
+        src={image}
+        alt="preview"
+        className="w-28 rounded-2xl border border-slate-700"
+      />
 
-              <img
-                src={image}
-                alt="preview"
-                className="w-28 rounded-2xl border border-slate-700"
-              />
+      <button
+        onClick={() =>
+          setImage(null)
+        }
+        className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-sm"
+      >
 
-              <button
-                onClick={() =>
-                  setImage(null)
-                }
-                className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-sm"
-              >
+        ×
 
-                ×
+      </button>
 
-              </button>
+    </div>
 
-            </div>
+  </div>
 
-          </div>
+)}
 
-        )}
+{/* AUDIO PREVIEW */}
+{audio && (
 
-        {/* AUDIO PREVIEW */}
-        {audio && (
+  <div className="px-4 pb-2">
 
-          <div className="px-4 pb-2">
+    <div className="bg-slate-900 rounded-2xl p-2 w-fit">
 
-            <div className="bg-slate-900 rounded-2xl p-2 w-fit">
+      <audio
+        controls
+        src={audio}
+        className="h-8"
+      />
 
-              <audio
-                controls
-                src={audio}
-                className="h-8"
-              />
+    </div>
 
-            </div>
+  </div>
 
-          </div>
-
-        )}
+)}
 
         {/* INPUT */}
         <div className="p-3 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex gap-3 items-center">
 
           {/* IMAGE */}
-          <label className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl flex items-center justify-center cursor-pointer">
+          <label className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px] flex items-center justify-center cursor-pointer">
 
             📷
 
@@ -852,14 +768,12 @@ function App() {
             />
 
           </label>
-
+          
           {/* MIC */}
           <button
             onClick={() => {
 
-              if (
-                isRecording
-              ) {
+              if (isRecording) {
 
                 stopRecording();
 
@@ -870,7 +784,7 @@ function App() {
               }
 
             }}
-            className={`w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl text-white flex items-center justify-center ${
+            className={`px-4 rounded-2xl h-[50px] text-white ${
               isRecording
                 ? "bg-red-500 animate-pulse"
                 : "bg-slate-800 hover:bg-slate-700"
@@ -890,7 +804,7 @@ function App() {
                   !showEmojiPicker
                 )
               }
-              className="bg-slate-800 hover:bg-slate-700 text-white w-10 md:w-[50px] h-10 md:h-[52px] rounded-2xl"
+              className="bg-slate-800 hover:bg-slate-700 text-white px-4 rounded-2xl h-[50px]"
             >
 
               😀
@@ -917,7 +831,7 @@ function App() {
           {/* INPUT */}
           <input
             type="text"
-            placeholder="Message..."
+            placeholder="Type a secure message..."
             value={message}
             onChange={(e) => {
 
@@ -925,13 +839,10 @@ function App() {
                 e.target.value
               );
 
-              socket.emit(
-                "typing",
-                {
-                  room,
-                  username,
-                }
-              );
+              socket.emit("typing", {
+                room,
+                username,
+              });
 
             }}
             onKeyDown={(e) => {
@@ -945,7 +856,7 @@ function App() {
               }
 
             }}
-            className="flex-1 min-w-0 px-5 h-10 md:h-[50px] rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
+            className="flex-1 px-5 h-[50px] rounded-2xl bg-slate-900 text-white outline-none border border-slate-700 focus:border-blue-500"
           />
 
           {/* SEND */}
@@ -957,7 +868,7 @@ function App() {
               scale: 1.03,
             }}
             onClick={sendMessage}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all w-[70px] md:w-[110px] h-10 md:h-[50px] rounded-2xl text-white font-semibold"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all px-8 h-[50px] rounded-2xl text-white font-semibold"
           >
 
             Send
@@ -969,7 +880,6 @@ function App() {
       </div>
 
     </div>
-
   );
 
 }
