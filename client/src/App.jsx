@@ -3,7 +3,7 @@ import io from "socket.io-client";
 import { motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 
-const socket = io("https://chat-backend.onrender.com", {
+const socket = io("https://shadow-chat-m4th.onrender.com", {
 transports: ["websocket"],
 });
 
