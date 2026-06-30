@@ -29,12 +29,12 @@ function SupportModal({
       return;
     }
 
-    const { data } = await axios.post(
-      "http://localhost:5000/create-order",
-      {
-        amount,
-      }
-    );
+    await axios.post(
+  `${import.meta.env.VITE_API_URL}/create-order`,
+  {
+    amount,
+  }
+);
 
     if (!data.success) {
       alert("Unable to create payment.");
@@ -53,11 +53,10 @@ function SupportModal({
 
   try {
 
-    const verify = await axios.post(
-      "http://localhost:5000/verify-payment",
-      response
-    );
-
+    await axios.post(
+  `${import.meta.env.VITE_API_URL}/verify-payment`,
+  response
+);
     if (verify.data.success) {
 
       alert("❤️ Thank you for supporting Shadow Chat!");
