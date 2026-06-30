@@ -29,12 +29,12 @@ function SupportModal({
       return;
     }
 
-        await axios.post(
-      "https://shadow-chat-m4th.onrender.com/create-order",
-      {
-        amount,
-      }
-    );
+    const { data } = await axios.post(
+    `${import.meta.env.VITE_API_URL}/create-order`,
+    {
+      amount,
+    }
+  );
 
     if (!data.success) {
       alert("Unable to create payment.");
@@ -53,10 +53,10 @@ function SupportModal({
 
   try {
 
-        await axios.post(
-        "https://shadow-chat-m4th.onrender.com/verify-payment",
-        response
-      );
+    const verify = await axios.post(
+  `${import.meta.env.VITE_API_URL}/verify-payment`,
+  response
+);
     if (verify.data.success) {
 
       alert("❤️ Thank you for supporting Shadow Chat!");
