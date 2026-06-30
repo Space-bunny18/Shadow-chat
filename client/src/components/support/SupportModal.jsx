@@ -23,6 +23,8 @@ function SupportModal({
       supportAmount === "custom"
         ? Number(customAmount)
         : supportAmount;
+      console.log("Selected supportAmount:", supportAmount);
+      console.log("Final amount:", amount);
 
     if (!amount || amount < 10) {
       alert("Minimum support amount is ₹10");
@@ -35,6 +37,7 @@ function SupportModal({
       amount,
     }
   );
+  console.log("Create Order Response:", data);
 
     if (!data.success) {
       alert("Unable to create payment.");
@@ -92,13 +95,14 @@ function SupportModal({
 
     razor.open();
 
-  } catch (err) {
+ } catch (err) {
 
-    console.error(err);
+  console.error("Payment Error:", err);
+  console.error("Response:", err.response?.data);
 
-    alert("Payment initialization failed.");
+  alert("Payment initialization failed.");
 
-  }
+}
 };
 
   if (!open) return null;

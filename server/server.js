@@ -223,14 +223,19 @@ app.post("/create-order", async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID,
     });
 
-  } catch (error) {
-    console.error(error);
+  } 
+  catch (error) {
 
-    res.status(500).json({
-      success: false,
-      message: "Order creation failed",
-    });
-  }
+  console.error("RAZORPAY ERROR:");
+  console.error(error);
+
+  res.status(500).json({
+    success: false,
+    message: error.message,
+    error,
+  });
+
+}
 });
 app.post("/verify-payment", (req, res) => {
   try {
