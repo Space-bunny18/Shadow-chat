@@ -8,11 +8,25 @@ require("dotenv").config();
 
 const app = express();
 app.use(express.json());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://shadow-chat-cyan.vercel.app",
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://shadow-chat-cyan.vercel.app"
-  ],
+  origin: (origin, callback) => {
+
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".vercel.app")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+
+  },
   credentials: true,
 }));
 const razorpay = new Razorpay({
@@ -24,15 +38,23 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://shadow-chat-cyan.vercel.app"
-    ],
+    origin: (origin, callback) => {
+
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
-
 const roomMessages = {};
 const roomUsers = {};
 
