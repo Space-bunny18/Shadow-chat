@@ -224,19 +224,22 @@ app.post("/create-order", async (req, res) => {
     });
 
   } 
-  catch (error) {
+   catch (error) {
 
-  console.error("RAZORPAY ERROR:");
+  console.error("========== RAZORPAY ERROR ==========");
   console.error(error);
+
+  if (error.error) {
+    console.error(error.error);
+  }
 
   res.status(500).json({
     success: false,
     message: error.message,
-    error,
+    razorpay: error.error || null,
   });
 
-}
-});
+}});
 app.post("/verify-payment", (req, res) => {
   try {
     const {
