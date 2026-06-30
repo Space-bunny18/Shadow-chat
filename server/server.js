@@ -235,10 +235,8 @@ app.post("/create-order", async (req, res) => {
 
   res.status(500).json({
     success: false,
-    message: error.message,
-    razorpay: error.error || null,
+    message: "Order creation failed",
   });
-
 }});
 app.post("/verify-payment", (req, res) => {
   try {

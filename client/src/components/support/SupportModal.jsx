@@ -23,8 +23,6 @@ function SupportModal({
       supportAmount === "custom"
         ? Number(customAmount)
         : supportAmount;
-      console.log("Selected supportAmount:", supportAmount);
-      console.log("Final amount:", amount);
 
     if (!amount || amount < 10) {
       alert("Minimum support amount is ₹10");
@@ -96,8 +94,6 @@ function SupportModal({
     razor.open();
 
  } catch (err) {
-
-  console.error("Payment Error:", err);
   console.error("Response:", err.response?.data);
 
   alert("Payment initialization failed.");
