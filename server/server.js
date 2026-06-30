@@ -2,19 +2,32 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+require("dotenv").config();
 
 const app = express();
-
+app.use(express.json());
 app.use(cors({
-  origin: "https://shadow-chat-cyan.vercel.app/",
+  origin: [
+    "http://localhost:5173",
+    "https://shadow-chat-cyan.vercel.app"
+  ],
   credentials: true,
 }));
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://shadow-chat-cyan.vercel.app/",
+    origin: [
+      "http://localhost:5173",
+      "https://shadow-chat-cyan.vercel.app"
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -162,6 +175,83 @@ io.on("connection", (socket) => {
 
   });
 
+});
+app.post("/create-order", async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Minimum amount is ₹10",
+      });
+    }
+
+    const options = {
+      amount: amount * 100, // Razorpay uses paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    res.json({
+      success: true,
+      order,
+      key: process.env.RAZORPAY_KEY_ID,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Order creation failed",
+    });
+  }
+});
+app.post("/verify-payment", (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
+    const body =
+      razorpay_order_id + "|" + razorpay_payment_id;
+
+    const expectedSignature = crypto
+      .createHmac(
+        "sha256",
+        process.env.RAZORPAY_KEY_SECRET
+      )
+      .update(body.toString())
+      .digest("hex");
+
+    const isAuthentic =
+      expectedSignature === razorpay_signature;
+
+    if (!isAuthentic) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Payment verified successfully",
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Verification error",
+    });
+  }
 });
 
 app.get("/", (req, res) => {

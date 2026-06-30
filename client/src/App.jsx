@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
+import SupportModal from "./components/support/SupportModal";
 
 const socket = io("https://shadow-chat-m4th.onrender.com", {
 transports: ["websocket"],
@@ -30,6 +31,7 @@ const [showSidebar, setShowSidebar] =
 useState(false);
 
 const [image, setImage] = useState(null);
+const [showSupportModal, setShowSupportModal] = useState(false);
 
 const [replyingTo, setReplyingTo] =
 useState(null);
@@ -43,6 +45,8 @@ useState(false);
 const [audio, setAudio] = useState(null);
 
 const chatEndRef = useRef(null);
+
+const [supportAmount, setSupportAmount] = useState(100);
 
 const avatarColors = [
 "bg-blue-500",
@@ -567,17 +571,25 @@ Temporary conversation
 
 <div className="flex items-center gap-3">
 
-<div
-className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(
-username
-)}`}
->
+  <button
+    onClick={() => setShowSupportModal(true)}
+    className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-xl border border-cyan-500/20 text-cyan-300"
+  >
+    ❤️ Support
+  </button>
 
-{username
-.charAt(0)
-.toUpperCase()}
+  <button
+    onClick={() => setShowSupportModal(true)}
+    className="md:hidden w-10 h-10 rounded-full bg-white/10 border border-cyan-500/20"
+  >
+    ❤️
+  </button>
 
-</div>
+  <div
+    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(username)}`}
+  >
+    {username.charAt(0).toUpperCase()}
+  </div>
 
 </div>
 
@@ -818,7 +830,12 @@ Send
 </div>
 
 </div>
-
+<SupportModal
+  open={showSupportModal}
+  onClose={() => setShowSupportModal(false)}
+  supportAmount={supportAmount}
+  setSupportAmount={setSupportAmount}
+/>
 </div>
 
 );
