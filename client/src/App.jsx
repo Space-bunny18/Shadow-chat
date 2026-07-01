@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 import SupportModal from "./components/support/SupportModal";
 
+
 const socket = io("https://shadow-chat-m4th.onrender.com", {
 transports: ["websocket"],
 });

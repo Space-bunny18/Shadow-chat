@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
+import PaymentQRModal from "./PaymentQRModal";
 
-const PAYMENT_LINKS = {
-  50: "#",
-  100: "#",
-  250: "#",
-};
+
 
 function SupportModal({
   open,
@@ -16,97 +12,33 @@ function SupportModal({
 }) {
 
   const [customAmount, setCustomAmount] = useState("");
- const handleSupport = async () => {
-  try {
+  const [showQR, setShowQR] = useState(false);
+  const amount =
+  supportAmount === "custom"
+    ? Number(customAmount || 0)
+    : supportAmount;
 
-    const amount =
-      supportAmount === "custom"
-        ? Number(customAmount)
-        : supportAmount;
+  const upiLink = `upi://pay?pa=${import.meta.env.VITE_UPI_ID}&pn=Shadow%20Chat&am=${amount}&cu=INR`;
+const handleSupport = () => {
 
-    if (!amount || amount < 10) {
-      alert("Minimum support amount is ₹10");
-      return;
-    }
-
-    const { data } = await axios.post(
-    `${import.meta.env.VITE_API_URL}/create-order`,
-    {
-      amount,
-    }
-  );
-  console.log("Create Order Response:", data);
-
-    if (!data.success) {
-      alert("Unable to create payment.");
-      return;
-    }
-
-    const options = {
-      key: data.key,
-      amount: data.order.amount,
-      currency: data.order.currency,
-      name: "Shadow Chat",
-      description: "Support Shadow Chat",
-      order_id: data.order.id,
-
-      handler: async function (response) {
-
-  try {
-
-    const verify = await axios.post(
-  `${import.meta.env.VITE_API_URL}/verify-payment`,
-  response
-);
-    if (verify.data.success) {
-
-      alert("❤️ Thank you for supporting Shadow Chat!");
-
-      onClose();
-
-    } else {
-
-      alert("Payment verification failed.");
-
-    }
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Verification failed.");
-
+  if (!amount || amount < 10) {
+    alert("Minimum support amount is ₹10");
+    return;
   }
 
-},
+  setShowQR(true);
 
-      prefill: {
-        name: "Shadow Chat User",
-      },
-
-      theme: {
-        color: "#06b6d4",
-      },
-    };
-
-    const razor = new window.Razorpay(options);
-
-    razor.open();
-
- } catch (err) {
-  console.error("Response:", err.response?.data);
-
-  alert("Payment initialization failed.");
-
-}
 };
+
 
   if (!open) return null;
 
   return (
   <div
   className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
-  onClick={onClose}
+  onClick={() => {
+    if (!showQR) onClose();
+  }}
 >
 
     <motion.div
@@ -278,7 +210,7 @@ function SupportModal({
             }`}
           >
 
-          ❤️ Support ₹{
+          ❤️ Continue ₹{
           supportAmount === "custom"
           ? (customAmount || "")
           : supportAmount
@@ -289,8 +221,13 @@ function SupportModal({
       </div>
 
     </motion.div>
-
-  </div>
+    <PaymentQRModal
+        open={showQR}
+        onClose={() => setShowQR(false)}
+        amount={amount}
+        upiLink={upiLink}
+    />
+    </div>
 );
 
 }
